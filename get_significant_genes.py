@@ -45,33 +45,28 @@ def make_heatmaps(D,n):
         cmap = "Greens"
         )
     plt.title(f"Top {n} differentially regulated genes")
-    plt.savefig("heatmaps.png")
+    plt.savefig("figs/heatmaps.png")
     plt.close()
 
 
 def make_histogram(D):
 
-    plt.hist(D["z_norm_log2FC"])
-    plt.title
+    plt.hist(D["z_norm_log2FC"],bins=100)
+    plt.title("Distrubution of Z-normalized Log2FC values")
     plt.savefig("figs/distribution of FC")
 
 
 def main():
     file = "diff/5s_vs_4s.gene_exp.diff"
-    n = 20
-    assert(len(sys.argv) in [1,2,3])
-    if len(sys.argv) == 1:
-        print(f"using default params:\n\tn ={n}\n\tinput file = {file}")
-    else:
-        file = sys.argv[1]
-        n = int(sys.argv[2])
-
+    assert len(sys.argv) == 2, "usage : python3 get_significant_genes [n] - must specify how many genes you want" 
+    n = int(sys.argv[1])
 
     D = get_diffy_expressed_genes(file)
     make_histogram(D)
     make_heatmaps(D,n)
 
     print(D.head(n).to_string())
+    print(list(D["gene_id"].head(n)))
 
 if __name__ == "__main__":
     main()
