@@ -2,15 +2,21 @@ import numpy as np
 import pandas as pd
 import sys
 import matplotlib.pyplot as plt
+import seaborn as sb
 
-def get_diffy_expressed_genes(filepath,n):
+"""
+postive log2FC implies upregulation in the treated (4s) sample
+"""
+
+def get_diffy_expressed_genes(filepath, n = None):
     """
-    Transforms the cuffdiff dataframe specified at file_path to a pd:Dataframe with columns. Removes all rows with significance == no
+    Transforms the cuffdiff dataframe specified at file_path to a pd:Dataframe with columns
     -  gene_id
     - log2(fold_change)
     - z_norm_log2FC: Normalized FC based on rows from the input dataframe whose log2(fold_change) != -inf. I 
     - p_value
     - q_value
+    Removes all rows with significance == no
 
     """
     D = pd.read_csv(filepath, delimiter="\t")
@@ -20,16 +26,34 @@ def get_diffy_expressed_genes(filepath,n):
     D = D[D["significant"] == "yes"]
 
     D = D[ ["gene_id", "log2(fold_change)", "z_norm_log2FC", "p_value", "q_value"] ]
-    D.sort_values("z_norm_log2FC",inplace=True,ascending=False)
     
-    # print("upregulated:")
-    # print(D.head(n))
-    # print("downregulated:")
-    # print(D.tail(n))
-    # print("differentially regulated")
-    
-    D.sort_values(by="z_norm_log2FC", inplace=True, key = lambda x: abs(x))
+    D.sort_values(by="z_norm_log2FC", inplace=True, key = lambda x: abs(x), ascending=False)
+    D["z_norm_log2FC"] = pd.to_numeric(D["z_norm_log2FC"], errors="coerce")
+
+    if n is not None:
+        return D.head(n)
     return D
+
+
+def make_heatmaps(D,n):
+    n = min(n, 30)
+
+    D_abs = D.sort_values("z_norm_log2FC", key=lambda x: abs(x), ascending= False)
+    sb.heatmap(
+        D_abs[["z_norm_log2FC"]].head(n).sort_values("z_norm_log2FC", ascending=False),
+        yticklabels=D["gene_id"].head(n),
+        cmap = "Greens"
+        )
+    plt.title(f"Top {n} differentially regulated genes")
+    plt.savefig("heatmaps.png")
+    plt.close()
+
+
+def make_histogram(D):
+
+    plt.hist(D["z_norm_log2FC"])
+    plt.title
+    plt.savefig("figs/distribution of FC")
 
 
 def main():
@@ -42,11 +66,15 @@ def main():
         file = sys.argv[1]
         n = int(sys.argv[2])
 
-    D = get_diffy_expressed_genes(file,n)
+
+    D = get_diffy_expressed_genes(file)
+    make_histogram(D)
+    make_heatmaps(D,n)
 
     print(D.head(n).to_string())
 
 if __name__ == "__main__":
     main()
+
 
 
